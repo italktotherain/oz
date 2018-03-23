@@ -13,7 +13,7 @@ class CoreElement
     @@locator_options
   end
 
-  attr_reader :name, :active, :locator_hash, :type
+  attr_reader :name, :active, :disabled, :locator_hash, :type
 
 
   ### Attrib Methods ###
@@ -34,6 +34,8 @@ class CoreElement
     @world = world
     @options = {:active => true}.merge(options)
     @active = @options[:active]
+    @options = {:disabled => false}.merge(options)
+    @disabled = @options[:disabled]
 
     assign_element_type
   end
@@ -87,6 +89,16 @@ class CoreElement
     end
   end
 
+  def watir_disabled?
+    return false unless watir_element.disabled?
+    begin
+      return watir_element.disabled?
+    rescue Watir::Exception::UnknownObjectException => e
+      @world.logger.warn 'Object not found during disabled check, proceeding anyway...'
+      return false
+    end
+  end
+
   def flash
     return unless @world.configuration['FLASH_VALIDATION']
     assert_active
@@ -122,11 +134,32 @@ class CoreElement
     condition ? activate : deactivate
   end
 
+  def disable
+    @disabled = true
+  end
+
+  def enable
+    @disabled = false
+  end
+
+  def disabled?
+    @disabled
+  end
+
+  def disable_if(condition)
+    condition ? disable : enable
+  end
+
   def validate(data)
     if active
       @world.logger.validation "Checking that [#{@name}] is displayed..."
       raise "ERROR! [#{@name}] was not found on the page!\n\tFOUND: None\n\tEXPECTED: #{@name} should be displayed!\n\n" unless visible?
       flash
+      if disabled
+        @world.logger.validation "Checking that [#{@name}] is disabled..."
+        raise "ERROR! [#{@name}] was found to be enabled!\n\tFOUND: #{name} is enabled\n\tEXPECTED: #{@name} should be disabled!\n\n" unless watir_disabled?
+        flash
+      end
     else
       @world.logger.validation "Checking that [#{@name}] is not displayed..."
       raise "ERROR! [#{@name}] was found on the page!\n\tFOUND: #{@name}\n\tEXPECTED: Element should not be displayed!\n\n" if visible?
