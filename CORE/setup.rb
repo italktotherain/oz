@@ -22,6 +22,7 @@ def append_to_world(module_name)
 end
 
 def require_all(directory)
+  puts "requiring all for #{directory}"
   source = File.dirname(__FILE__)
   directory = File.join(source, directory)
   Dir["#{directory}/*.rb"].each { |file|

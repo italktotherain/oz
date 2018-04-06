@@ -1,4 +1,5 @@
-
+require 'appium_lib'
+require 'selenium-webdriver'
 
 class BrowserEngine
   
@@ -15,9 +16,54 @@ class BrowserEngine
         @world.browser = internet_explorer_browser
       when 'chrome'
         @world.browser = chrome_browser
+      when 'appium'
+        @world.browser = appium_browser
       else
         raise "ERROR: No browser specified in configuration!\n" if @world.configuration['BROWSER'].nil?
         raise "ERROR: Browser #{@world.configuration['BROWSER']} is not supported!\n"
+    end
+  end
+
+  def appium_browser
+    # TODO: let's also setup specific keywords for simulator/local vs connected/remote device
+    # It complained about opts not being a hash when I tried to only use the case statement for setting up that
+    # So I guess we'll have to do all the separate Appium::Driver.new.start_driver calls in each block, which is grossish
+    case @world.configuration['MOBILE_PLATFORM']
+      when 'uwp' # UWP Capabilities (local machine)
+        opts = {
+            caps: {
+                noReset: true,
+                platformName: 'WINDOWS',
+                platform: 'WINDOWS',
+                deviceName: 'WindowsPC',
+                app: 'Northwoods.NorthwoodsTraverse_jjsv4950d9jp4!App'
+            },
+            appium_lib: {
+                wait_timeout: 30,
+                # server_url: 'http://10.200.2.181:4723/wd/hub'
+            }
+        }
+        Appium::Driver.new(opts, false).start_driver
+      when 'uwp_remote' # UWP Remote Capabilities (running on Surface)
+        opts = {
+            caps: {
+                noReset: true,
+                platformName: 'WINDOWS',
+                platform: 'WINDOWS',
+                deviceName: 'WindowsPC',
+                app: 'Northwoods.NorthwoodsTraverse_jjsv4950d9jp4!App'
+            },
+            appium_lib: {
+                wait_timeout: 30,
+                server_url: 'http://10.200.2.181:4723/wd/hub'
+            }
+        }
+        Appium::Driver.new(opts, false).start_driver
+      when 'ios' # iOS Capabilities (local simulator)
+        # TODO: iOS capabilities here
+      else
+      raise "ERROR: Appium specified as browser but no mobile platform given!\n" if @world.configuration['MOBILE_PLATFORM'].nil?
+      raise "ERROR: Mobile Platform #{@world.configuration['MOBILE_PLATFORM']} is not supported!\n"
     end
   end
 

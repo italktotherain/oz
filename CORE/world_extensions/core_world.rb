@@ -6,6 +6,7 @@ module CoreWorld
     attr_reader :root_page, :data_target, :logger
 
     def create_world
+      puts "CREATING WORLD"
         @configuration = ConfigurationEngine.new
         @logger = OzLogger.new(self)
         @data_engine = DataEngine.new(@logger)
@@ -26,7 +27,11 @@ module CoreWorld
     end
 
     def cleanup_world
-        @browser.close if @configuration['CLOSE_BROWSER']
+        if @configuration['BROWSER'] == 'appium'
+          @browser.quit if @configuration['CLOSE_BROWSER']
+        else
+          @browser.close if @configuration['CLOSE_BROWSER']
+        end
         @ledger.print_all if @configuration['PRINT_LEDGER']
     end
 

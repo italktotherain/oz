@@ -5,7 +5,7 @@ class ConfigurationEngine
   def initialize
     @config_data = JSON.parse(File.read("#{ENV['OZ_CONFIG_DIR']}/user_config.json"))
     merge_system_config
-    load_environment
+    load_environment unless @config_data['BROWSER'] == 'appium'
   end
 
   def load_environment

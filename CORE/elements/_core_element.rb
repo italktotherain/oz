@@ -7,7 +7,7 @@ class CoreElement
     :core_element
   end
 
-  @@locator_options = [:id, :class, :xpath, :text, :href, :for, :name]
+  @@locator_options = [:id, :class, :xpath, :text, :href, :for, :name, :accessibility_id]
 
   def self.locator_options
     @@locator_options
@@ -43,7 +43,11 @@ class CoreElement
   end
 
   def watir_element
-    @watir_element ||= browser.send(@element_type, @locator_hash)
+    if @world.configuration['BROWSER'] == 'appium'
+      @watir_element ||= browser.find_element(@locator_hash)
+    else
+      @watir_element ||= browser.send(@element_type, @locator_hash)
+    end
   end
 
   def assign_element_type
@@ -80,7 +84,8 @@ class CoreElement
   def visible?
     return false unless watir_element.exists?
     begin
-      return watir_element.visible?
+      return watir_element.visible? unless @world.configuration['BROWSER'] == 'appium'
+      
     rescue Watir::Exception::UnknownObjectException => e
       @world.logger.warn 'Object not found during visibility check, proceeding anyway...'
       return false
