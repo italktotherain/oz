@@ -61,6 +61,7 @@ class BrowserEngine
         Appium::Driver.new(opts, false).start_driver
       when 'ios' # iOS Capabilities (local simulator)
         # TODO: iOS capabilities here
+        # Use sendKeysStrategy: "setValue"
       else
       raise "ERROR: Appium specified as browser but no mobile platform given!\n" if @world.configuration['MOBILE_PLATFORM'].nil?
       raise "ERROR: Mobile Platform #{@world.configuration['MOBILE_PLATFORM']} is not supported!\n"

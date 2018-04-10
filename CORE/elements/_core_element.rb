@@ -82,13 +82,22 @@ class CoreElement
   end
 
   def visible?
-    return false unless watir_element.exists?
-    begin
-      return watir_element.visible? unless @world.configuration['BROWSER'] == 'appium'
-      
-    rescue Watir::Exception::UnknownObjectException => e
-      @world.logger.warn 'Object not found during visibility check, proceeding anyway...'
-      return false
+    if @world.configuration['BROWSER'] == 'appium'
+      begin
+        is_displayed = watir_element.displayed?
+      rescue
+        @world.logger.warn 'Object not found during visibility check, proceeding anyway...'
+        is_displayed = false
+      end
+      return is_displayed
+    else
+      return false unless watir_element.exists?
+      begin
+        return watir_element.visible?
+      rescue Watir::Exception::UnknownObjectException => e
+        @world.logger.warn 'Object not found during visibility check, proceeding anyway...'
+        return false
+      end
     end
   end
 

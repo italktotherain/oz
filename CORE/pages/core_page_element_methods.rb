@@ -22,6 +22,10 @@ class CorePage
         return add_element(name, options, TextFieldElement)
     end
 
+    def add_masked_text_field(name, options)
+        return add_element(name, options, MaskedTextFieldElement)
+    end
+
     def add_text_area(name, options)
       return add_element(name, options, TextAreaElement)
     end

@@ -8,7 +8,11 @@ class TextFieldElement < CoreElement
     end
 
     def watir_element
+      if @world.configuration['BROWSER'] == 'appium'
+        super
+      else
         @watir_element ||= browser.text_field(@locator_hash)
+      end
     end
 
     def value
@@ -20,10 +24,14 @@ class TextFieldElement < CoreElement
       assert_active
       @world.logger.action "Filling [#{@name}] with [#{data}]"
       manually_clear if @world.configuration["BROWSER"] == "internet_explorer"
-      watir_element.set(data)
+      @world.configuration['BROWSER'] == 'appium' ? watir_element.send_keys(data) : watir_element.set(data)
 
       begin
-        Watir::Wait.until(timeout: 1){watir_element.value == data}
+        if @world.configuration['BROWSER'] == 'appium'
+          Watir::Wait.until(timeout: 1){watir_element.text == data}
+        else
+          Watir::Wait.until(timeout: 1){watir_element.value == data}
+        end
       rescue
         raise "ERROR: Problem filling element [#{@name}] with [#{data}] value after fill was found as [#{watir_element.value}]"
       end
