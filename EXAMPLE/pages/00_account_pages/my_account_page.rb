@@ -1,6 +1,11 @@
 class MyAccountPage < ExampleStorefrontRootPage
 
   add_id_element(:h1, /MY ACCOUNT/, class: 'page-heading')
+  add_route(:OrderHistoryPage, :order_history_button)
+  add_route(:CreditSlipsPage, :my_credit_slips_button)
+  add_route(:MyAddressesPage, :my_addresses_button)
+  add_route(:PersonalInformationPage, :my_personal_information_button)
+  add_route(:MyWishlistsPage, :my_wishlists_button)
 
   def create_elements
 

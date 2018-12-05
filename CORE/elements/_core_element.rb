@@ -42,11 +42,15 @@ class CoreElement
     @world.browser
   end
 
+  def parent
+    @options[:parent] ? @options[:parent].watir_element : browser
+  end
+
   def watir_element
     if @world.configuration['BROWSER'] == 'appium'
-      @watir_element ||= browser.find_element(@locator_hash)
+      @watir_element ||= parent.find_element(@locator_hash)
     else
-      @watir_element ||= browser.send(@element_type, @locator_hash)
+      @watir_element ||= parent.send(@element_type, @locator_hash)
     end
   end
 
@@ -73,6 +77,22 @@ class CoreElement
     @on_click = block
   end
 
+  def hover
+    assert_active
+    @world.logger.action "Hovering over [#{@name}]"
+    begin
+      watir_element.hover
+    rescue Watir::Exception::UnknownObjectException => e
+      @world.logger.warn 'Unable to hover over element, attempting to proceed anyway...'
+      return false
+    end
+    @on_hover.call if @on_hover
+  end
+
+  def on_hover(&block)
+    @on_hover = block
+  end
+
   def fill(data)
     @on_fill.call if @on_fill
   end
@@ -82,20 +102,25 @@ class CoreElement
   end
 
   def visible?
+    @world.logger.warn '[OZ DEPRECATION] Checking `#visisble?` is deprecated. Use `#present?` instead.'
+    present?
+  end
+
+  def present?
     if @world.configuration['BROWSER'] == 'appium'
       begin
-        is_displayed = watir_element.displayed?
+        watir_element.wait_until_present(timeout:0)
+        return true
       rescue
-        @world.logger.warn 'Object not found during visibility check, proceeding anyway...'
-        is_displayed = false
+        # I don't actually know if this will continue yet when using appium, so just commenting the line out because it doesn't exist in base oz
+        # @world.logger.warn 'Object not found during visibility check, proceeding anyway...'
+        return false
       end
-      return is_displayed
     else
-      return false unless watir_element.exists?
       begin
-        return watir_element.visible?
-      rescue Watir::Exception::UnknownObjectException => e
-        @world.logger.warn 'Object not found during visibility check, proceeding anyway...'
+        watir_element.wait_until_present(timeout:0)
+        return true
+      rescue Watir::Wait::TimeoutError => e
         return false
       end
     end
@@ -109,6 +134,7 @@ class CoreElement
 
   def value
     assert_active
+    return nil unless present?
     watir_element.text
   end
 
@@ -138,12 +164,20 @@ class CoreElement
 
   def validate(data)
     if active
-      @world.logger.validation "Checking that [#{@name}] is displayed..."
-      raise "ERROR! [#{@name}] was not found on the page!\n\tFOUND: None\n\tEXPECTED: #{@name} should be displayed!\n\n" unless visible?
-      flash
+      validation_point = @world.validation_engine.add_validation_point("Checking that [#{@name}] is displayed...")
+      if present?
+        validation_point.pass
+        flash
+      else
+        validation_point.fail("ERROR! [#{@name}] was not found on the page!\n\tFOUND: None\n\tEXPECTED: #{@name} should be displayed!")
+      end
     else
-      @world.logger.validation "Checking that [#{@name}] is not displayed..."
-      raise "ERROR! [#{@name}] was found on the page!\n\tFOUND: #{@name}\n\tEXPECTED: Element should not be displayed!\n\n" if visible?
+      validation_point = @world.validation_engine.add_validation_point("Checking that [#{@name}] is not displayed...")
+      if present?
+        validation_point.fail("ERROR! [#{@name}] was found on the page!\n\tFOUND: #{@name}\n\tEXPECTED: Element should not be displayed!")
+      else
+        validation_point.pass
+      end
     end
   end
 

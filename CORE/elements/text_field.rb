@@ -11,7 +11,7 @@ class TextFieldElement < CoreElement
       if @world.configuration['BROWSER'] == 'appium'
         super
       else
-        @watir_element ||= browser.text_field(@locator_hash)
+        @watir_element ||= parent.text_field(@locator_hash)
       end
     end
 

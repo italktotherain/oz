@@ -2,19 +2,24 @@ require 'watir'
 
 module CoreWorld
 
-    attr_accessor :browser, :configuration, :ledger, :router, :data_engine, :browser_engine
+    attr_accessor :browser, :configuration, :ledger, :router, :data_engine, :browser_engine, :validation_engine
     attr_reader :root_page, :data_target, :logger
 
     def create_world
-      puts "CREATING WORLD"
         @configuration = ConfigurationEngine.new
         @logger = OzLogger.new(self)
         @data_engine = DataEngine.new(@logger)
         @ledger = Ledger.new(self)
         @router = Router.new(self)
         @browser_engine = BrowserEngine.new(self)
+        @validation_engine = ValidationEngine.new(self)
         log_header
         set_data_target
+        set_default_watir_timeout
+    end
+
+    def set_default_watir_timeout
+      Watir.default_timeout = @configuration['DEFAULT_ELEMENT_TIMEOUT']
     end
 
     def set_root_page(page_class)
@@ -27,12 +32,9 @@ module CoreWorld
     end
 
     def cleanup_world
-        if @configuration['BROWSER'] == 'appium'
-          @browser.quit if @configuration['CLOSE_BROWSER']
-        else
-          @browser.close if @configuration['CLOSE_BROWSER']
-        end
-        @ledger.print_all if @configuration['PRINT_LEDGER']
+        @browser_engine.cleanup
+        @validation_engine.cleanup
+        @ledger.cleanup
     end
 
     def log_header

@@ -10,3 +10,10 @@ debug.log
 page_graph.dot
 Gemfile
 Gemfile.lock
+
+#Visual studio code configs
+.vscode
+
+#Bundler config, binstubs and such
+.bundle
+bin

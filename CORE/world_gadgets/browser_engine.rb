@@ -2,7 +2,7 @@ require 'appium_lib'
 require 'selenium-webdriver'
 
 class BrowserEngine
-  
+
   def initialize(world)
     @world = world
   end
@@ -21,6 +21,15 @@ class BrowserEngine
       else
         raise "ERROR: No browser specified in configuration!\n" if @world.configuration['BROWSER'].nil?
         raise "ERROR: Browser #{@world.configuration['BROWSER']} is not supported!\n"
+    end
+    maximize if @world.configuration['MAXIMIZE_BROWSER']
+    if @world.configuration['RESIZE_BROWSER']
+      begin
+        width, height = @world.configuration['RESIZE_BROWSER']
+        resize(width, height)
+      rescue => error
+        @world.logger.warn("WARNING: Could not resize the browser, make sure RESIZE_BROWSER option is set as an array with [width] set to first element and [height] set to second element. \n\tFull Error text: #{error.message}")
+      end
     end
   end
 
@@ -71,7 +80,7 @@ class BrowserEngine
   def chrome_browser
     if @world.configuration['USE_GRID']
       capabilities = Selenium::WebDriver::Remote::Capabilities.chrome(chrome_options: {'detach' => true})
-      driver = Selenium::WebDriver.for(:remote, :url => @world.configuration['ENVIRONMENT']['GRID'] , desired_capabilities: capabilities)
+      driver = Selenium::WebDriver.for(:remote, :url => @world.configuration['ENVIRONMENT']['GRID'], desired_capabilities: capabilities)
     else
       options = Selenium::WebDriver::Chrome::Options.new
       if @world.configuration['HEADLESS_CHROME']
@@ -80,12 +89,16 @@ class BrowserEngine
         options.add_option(:detach, true)
       end
 
-      if OS.linux?
-        path = "#{@world.configuration['CORE_DIR']}/utils/web_drivers/linux-chromedriver"
+      if @world.configuration['DRIVER_LOCATION']
+        path = @world.configuration['DRIVER_LOCATION']
       else
-        path = "#{@world.configuration['CORE_DIR']}/utils/web_drivers/chromedriver"
-        path += '.exe' if OS.windows?
-      end      
+        if OS.linux?
+          path = "#{@world.configuration['CORE_DIR']}/utils/web_drivers/linux-chromedriver"
+        else
+          path = "#{@world.configuration['CORE_DIR']}/utils/web_drivers/chromedriver"
+          path += '.exe' if OS.windows?
+        end
+      end
       driver = Selenium::WebDriver.for(:chrome, options: options, driver_path: path)
     end
     return Watir::Browser.new(driver)
@@ -106,6 +119,22 @@ class BrowserEngine
   def firefox_browser
     path = "#{@world.configuration['CORE_DIR']}/utils/web_drivers/geckodriver"
     return Watir::Browser.new(:firefox, driver_path: path)
+  end
+
+  def maximize
+    @world.browser.window.maximize
+  end
+
+  def resize(width, height)
+    @world.browser.window.resize_to(width, height)
+  end
+
+  def cleanup
+    if @world.configuration['BROWSER'] == 'appium'
+      @world.browser.quit if @world.configuration['CLOSE_BROWSER'] and @world.browser
+    else
+      @world.browser.close if @world.configuration['CLOSE_BROWSER'] and @world.browser
+    end
   end
 
 end
